@@ -1,0 +1,17 @@
+<!DOCTYPE LiEvent
+[
+<!ELEMENT LiEvent (ExportInformation,SessionInformation,MarkerData)>
+<!ELEMENT ExportInformation (Date,DllVersion,SessionLength)>
+<!ELEMENT Date (#PCDATA)>
+<!ELEMENT DllVersion (#PCDATA)>
+<!ELEMENT SessionLength (#PCDATA)>
+<!ELEMENT SessionInformation (Information)>
+<!ELEMENT Information (Name,Value)>
+<!ELEMENT Name (#PCDATA)>
+<!ELEMENT Value(#PCDATA)>
+<!ELEMENT MarkerData (Marker)>
+<!ELEMENT Marker (Name,SourceType,Results)>
+<!ELEMENT Name (#PCDATA)>
+<!ELEMENT SourceType (#PCDATA)>
+<!ELEMENT Results (#PCDATA)>
+]>
