@@ -46,9 +46,9 @@ table_column_matching <- function(master, adddata){
 folder_check <- function(){
   folder_selected <- tk_choose.dir()
   files_in_folder <- list.files(path = folder_selected)
-  if(isTRUE(which(files_in_folder == "Experiment_Data.csv") != 0)){
-    load_experiment_data(file = files_in_folder[which(files_in_folder == "Experiment_Data.csv")], folder = folder_selected)
-  }else if(isTRUE(which(files_in_folder == "Experiment_Data.csv") == 0)){
+  if(length(which(files_in_folder == "Experiment_Data.csv")) != 0){
+    load_experiment_data(folder = folder_selected)
+  }else if(length(which(files_in_folder == "Experiment_Data.csv")) == 0){
     generate_experiment_data(folder = folder_selected, files = files_in_folder)
   }
 }
@@ -85,6 +85,8 @@ generate_experiment_data <- function(folder, files){
     
     current_xml_data_measure <- data.frame()
     current_xml_data_evaluation <- data.frame()
+    
+    ## Read Measure Data ##
     for(x in 1:nrow(current_xml_data_raw)){
       if(isTRUE(grepl("Measure",current_xml_data_raw[x]))){
         if(is_empty(current_xml_data_measure)){
@@ -136,6 +138,8 @@ generate_experiment_data <- function(folder, files){
     xml_latency_numbered$order <- sequence_list
     xml_latency_numbered$measure <- paste(xml_latency_numbered$V1,xml_latency_numbered$order,sep = ".")
     xml_latency_final3[ ,1] <- xml_latency_numbered$measure
+    
+    ## Read Evaluation Data ##
     for(x in 1:nrow(current_xml_data_raw)){
       if(isTRUE(grepl("Evaluation",current_xml_data_raw[x]))){
         if(is_empty(current_xml_data_evaluation)){
@@ -212,7 +216,7 @@ generate_experiment_data <- function(folder, files){
     assign(paste("trial_data",".",i, sep = ""), trial_data)
     Final_File_List <- c(Final_File_List, paste("trial_data",".",i, sep = ""))
     
-  }
+  } 
   
   ## Assign Final Column Sizing ##
   measure_table <- as.data.frame(matrix(nrow = length(xml_measure_list), ncol = 2))
@@ -252,9 +256,58 @@ generate_experiment_data <- function(folder, files){
   Final_Data_File <- as.data.frame(matrix(nrow = 0, ncol = length(col_list2)), stringsAsFactors = FALSE)
   colnames(Final_Data_File) <- col_list2
   
+  table_column_matching <- function(master, adddata){
+    master_col_list <- as.vector(colnames(master))
+    master_max_row <- nrow(master)
+    master_new_row <- length(adddata)
+    for(c in 1:master_new_row){
+      master <- add_row(master)
+    }
+    for(a in 1:length(master_col_list)){
+      master_col <- which(colnames(master) == master_col_list[a])
+      for(b in 1:length(adddata)){
+        add_col <- which(colnames(eval(parse(text = adddata[b]))) == master_col_list[a])
+        if(isTRUE(add_col != 0)){
+          master[(b + master_max_row) , master_col] <- eval(parse(text = adddata[b]))[1,add_col]
+        }else if(isTRUE(add_col == 0)){
+          master[(b + master_max_row) , master_col] <- NA
+        }
+      }
+    }
+    return(master)
+  }
+  
   Final_Data_File <- table_column_matching(master = Final_Data_File, adddata = Final_File_List)
+  
+  
   write.csv(Final_Data_File, file = paste(folder,"Experiment_Data.csv", sep="/" ), col.names = TRUE, na = "")
   
+}
+
+## Data Editing Function ##
+
+load_experiment_data <- function(folder){
+  ## Read csv ##
+  active_data <- read.csv(file = paste(folder,"Experiment_Data.csv",sep = "/"), header = TRUE)
+  active_data_matrix <- as.matrix(active_data)
+  active_data_matrix <- apply(active_data_matrix, c(1,2), as.character)
+  active_data_tcl <- tclArray()
+  for(a in 1:nrow(active_data)){
+    for(b in 1:ncol(active_data)){
+      #active_data_tcl[[a-1,b-1]] <- split(active_data_matrix[a,b], " ")[[1]]
+      active_data_tcl[[a-1,b-1]] <- active_data_matrix[a,b][[1]]
+      active_data_tcl[[a-1,b-1]] <- gsub("[{]","",active_data_tcl[[a-1,b-1]])
+      active_data_tcl[[a-1,b-1]] <- gsub("[}]","",active_data_tcl[[a-1,b-1]])
+    }
+  }
+  ## GUI ##
+  loadwindow <- tktoplevel()
+  tktitle(loadwindow) <-  "Data Viewer"
+  
+  loadwindow$env$active_table <- tk2table(loadwindow, variable = active_data_tcl, colwidth = 10, rows = nrow(active_data), 
+                                          cols = ncol(active_data), selectmode = "extended", background = "white"
+                                          ,titlerows = 1)
+  tkgrid(loadwindow$env$active_table)
 }
 
 ## GUI Main Window ##
