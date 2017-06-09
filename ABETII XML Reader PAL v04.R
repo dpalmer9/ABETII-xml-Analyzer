@@ -19,6 +19,28 @@ for(i in 1:length(list.of.packages)){
   }
 }
 
+### List of Transformation Functions ###
+table_column_matching <- function(master, adddata){
+  master_col_list <- as.vector(colnames(master))
+  master_max_row <- nrow(master)
+  master_new_row <- length(adddata)
+  for(c in 1:master_new_row){
+    master <- add_row(master)
+  }
+  for(a in 1:length(master_col_list)){
+    master_col <- which(colnames(master) == master_col_list[a])
+    for(b in 1:length(adddata)){
+      add_col <- which(colnames(eval(parse(text = adddata[b]))) == master_col_list[a])
+      if(isTRUE(add_col != 0)){
+        master[(b + master_max_row) , master_col] <- eval(parse(text = adddata[b]))[1,add_col]
+      }else if(isTRUE(add_col == 0)){
+        master[(b + master_max_row) , master_col] <- NA
+      }
+    }
+  }
+  return(master)
+}
+
 ## Import .xml data ##
 
 filelist <- tk_choose.files(caption="please select all xml files to analyze")
@@ -218,10 +240,11 @@ for(a in 1:length(col_list2)){
   }
 }
 
-Final_Data_File <- as.data.frame(matrix(nrow = 0, ncol = length(col_list2)), stringsAsFactors = FALSE)
+Final_Data_Template <- as.data.frame(matrix(nrow = 0, ncol = length(col_list2)), stringsAsFactors = FALSE)
 colnames(Final_Data_File) <- col_list2
-Final_Data_File <- merge(x = Final_Data_File,y = eval(parse(text = Final_File_List[i])) )
-# Final_Data_File <- merge(x = Final_Data_File,y = trial_data)
+
+Final_Data_File <- table_column_matching(master = Final_Data_Template, adddata = Final_File_List)
+write.csv (Final_Data_File, file = "Experiment_Data.csv", col.names = TRUE)
 
 ## GUI Main Window ##
 window1 <- tktoplevel()
